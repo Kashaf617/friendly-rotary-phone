@@ -1,0 +1,297 @@
+{
+  "app": {
+    "name": "نظام إدارة المطعم"
+  },
+  "common": {
+    "logout": "تسجيل الخروج",
+    "language": "اللغة",
+    "english": "الإنجليزية",
+    "arabic": "العربية"
+  },
+  "nav": {
+    "dashboard": "لوحة التحكم",
+    "pos": "نقطة البيع",
+    "orders": "الطلبات",
+    "menu": "قائمة الطعام",
+    "inventory": "المخزون",
+    "suppliers": "الموردون",
+    "hr_payroll": "الموارد البشرية والرواتب",
+    "attendance": "الحضور والانصراف",
+    "accounting": "المحاسبة",
+    "analytics": "التحليلات",
+    "settings": "الإعدادات",
+    "tenants": "الفروع / العملاء",
+    "subscriptions": "الاشتراكات",
+    "users": "المستخدمون"
+  },
+  "auth": {
+    "welcome_back": "مرحبًا بعودتك",
+    "sign_in_to_continue": "سجّل الدخول للمتابعة",
+    "email": "البريد الإلكتروني",
+    "password": "كلمة المرور",
+    "sign_in": "تسجيل الدخول",
+    "signing_in": "جارٍ تسجيل الدخول...",
+    "start_free_trial": "ابدأ التجربة المجانية",
+    "dont_have_account": "ليس لديك حساب؟ ابدأ التجربة المجانية",
+    "quick_demo_login": "تسجيل دخول تجريبي (اضغط للدخول)",
+    "admin": "مدير النظام",
+    "manager": "مدير",
+    "cashier": "كاشير",
+    "super_admin": "مدير المنصة",
+    "full_access": "صلاحيات كاملة",
+    "operations": "العمليات",
+    "pos_orders": "نقطة البيع والطلبات",
+    "platform_level": "مستوى المنصة"
+  },
+  "dashboard": {
+    "title": "لوحة التحكم",
+    "subtitle": "نظرة عامة على أداء مطعمك",
+    "kpi": {
+      "todays_revenue": "إيرادات اليوم",
+      "todays_revenue_sub": "إجمالي المبيعات اليوم",
+      "todays_orders": "طلبات اليوم",
+      "todays_orders_sub": "عدد الطلبات",
+      "monthly_revenue": "إيرادات الشهر",
+      "monthly_orders": "طلبات الشهر",
+      "vat_collected": "ضريبة القيمة المضافة",
+      "this_month_vat": "هذا الشهر (5%)",
+      "vs_yesterday": "مقارنة بالأمس",
+      "avg": "المتوسط",
+      "per_order": "طلب",
+      "active_employees": "الموظفون النشطون",
+      "active_employees_sub": "الموجودون حاليًا",
+      "orders_this_month": "طلب هذا الشهر"
+    },
+    "charts": {
+      "sales_trend": "اتجاه المبيعات (14 يوم)",
+      "revenue_by_order_type": "الإيرادات حسب نوع الطلب",
+      "top_selling_items": "الأصناف الأكثر مبيعًا"
+    },
+    "order_type": {
+      "dine_in": "داخل المطعم",
+      "takeaway": "سفري",
+      "delivery": "توصيل"
+    }
+  },
+  "pos": {
+    "search_placeholder": "ابحث عن عناصر القائمة...",
+    "order_type": {
+      "dine_in": "داخل المطعم",
+      "takeaway": "سفري",
+      "delivery": "توصيل"
+    },
+    "all": "الكل",
+    "current_order": "الطلب الحالي",
+    "clear_cart": "مسح",
+    "has_options": "يحتوي على خيارات",
+    "table_placeholder": "رقم الطاولة",
+    "guests": "الضيوف",
+    "empty": {
+      "title": "السلة فارغة",
+      "subtitle": "اضغط على العناصر للإضافة"
+    },
+    "discount": {
+      "add": "إضافة خصم",
+      "hide": "إخفاء الخصم",
+      "percent_suffix": "٪ خصم"
+    },
+    "notes_placeholder": "ملاحظات الطلب...",
+    "summary": {
+      "subtotal": "المجموع الفرعي",
+      "discount": "الخصم",
+      "vat": "ضريبة القيمة المضافة (5٪)",
+      "total": "الإجمالي"
+    },
+    "payment": {
+      "proceed": "متابعة للدفع",
+      "title": "اختر طريقة الدفع",
+      "cash": "نقد",
+      "card": "بطاقة",
+      "split": "تقسيم",
+      "cancel": "إلغاء"
+    }
+  },
+  "orders": {
+    "title": "الطلبات",
+    "subtitle": "إدارة وتتبع جميع الطلبات",
+    "refresh": "تحديث",
+    "summary": {
+      "total_orders": "إجمالي الطلبات",
+      "revenue": "الإيرادات",
+      "vat": "ضريبة القيمة المضافة المحصلة",
+      "average": "متوسط قيمة الطلب"
+    },
+    "filters": {
+      "all": "جميع الطلبات"
+    },
+    "status": {
+      "pending": "قيد الانتظار",
+      "confirmed": "مؤكد",
+      "preparing": "قيد التحضير",
+      "ready": "جاهز",
+      "served": "تم التقديم",
+      "completed": "مكتمل",
+      "cancelled": "ملغي"
+    },
+    "order_type": {
+      "dine_in": "داخل المطعم",
+      "takeaway": "سفري",
+      "delivery": "توصيل"
+    },
+    "labels": {
+      "vat": "الضريبة",
+      "paid": "مدفوع",
+      "unpaid": "غير مدفوع",
+      "no_orders": "لا توجد طلبات"
+    }
+  },
+  "menu": {
+    "title": "إدارة القائمة",
+    "subtitle": "إدارة الفئات والعناصر والتوافر والتسعير",
+    "add_item": "إضافة عنصر",
+    "search_placeholder": "ابحث عن العناصر...",
+    "table": {
+      "item": "العنصر",
+      "category": "الفئة",
+      "price": "السعر",
+      "cost": "التكلفة",
+      "margin": "الهامش",
+      "status": "الحالة",
+      "actions": "الإجراءات"
+    },
+    "status": {
+      "available": "متاح",
+      "unavailable": "غير متاح"
+    },
+    "tooltip": {
+      "toggle": "تبديل التوفر",
+      "edit": "تعديل",
+      "delete": "حذف"
+    },
+    "empty": "لا توجد عناصر في القائمة",
+    "modifiers_label": "خيار",
+    "unknown_category": "غير معروف"
+  },
+  "suppliers": {
+    "title": "الموردون وأوامر الشراء",
+    "subtitle": "تتبع الموردين والشحنات والمشتريات",
+    "search_placeholder": "ابحث عن مورد...",
+    "summary": {
+      "active": "موردون نشطون",
+      "pending_po": "أوامر شراء مفتوحة",
+      "monthly_spend": "الإنفاق الشهري",
+      "on_time": "التسليم في الوقت"
+    },
+    "table": {
+      "supplier": "المورد",
+      "category": "الفئة",
+      "contact": "التواصل",
+      "status": "الحالة",
+      "rating": "التقييم"
+    },
+    "po_table": {
+      "number": "رقم الطلب",
+      "supplier": "المورد",
+      "total": "الإجمالي",
+      "status": "الحالة",
+      "due_date": "تاريخ الاستحقاق"
+    },
+    "status": {
+      "active": "نشط",
+      "inactive": "غير نشط",
+      "draft": "مسودة",
+      "pending": "قيد الانتظار",
+      "approved": "موافق عليه",
+      "received": "تم الاستلام"
+    },
+    "empty_suppliers": "لا يوجد موردون",
+    "empty_pos": "لا توجد أوامر شراء"
+  },
+  "attendance": {
+    "title": "الحضور والورديات",
+    "subtitle": "راقب تسجيل الدخول اليومي وساعات العمل",
+    "month": "الشهر",
+    "filters": {
+      "all": "جميع الموظفين"
+    },
+    "summary": {
+      "present": "حاضر",
+      "late": "متأخر",
+      "absent": "غائب",
+      "overtime": "ساعات إضافية"
+    },
+    "table": {
+      "employee": "الموظف",
+      "role": "الدور",
+      "check_in": "بداية الدوام",
+      "check_out": "نهاية الدوام",
+      "hours": "الساعات"
+    },
+    "empty": "لا توجد سجلات حضور لهذه الفترة"
+  },
+  "analytics_page": {
+    "title": "تحليلات متقدمة",
+    "subtitle": "اكتشف الاتجاهات والأداء لكل ساعة",
+    "sales_trend": "اتجاه المبيعات",
+    "revenue_breakdown": "الإيرادات حسب نوع الطلب",
+    "hourly_sales": "المبيعات بالساعة",
+    "top_items": "أفضل الأصناف",
+    "empty": "لا توجد بيانات تحليلية"
+  },
+  "settings_page": {
+    "title": "إعدادات المساحة",
+    "subtitle": "تحكم في تفضيلات هذا الفرع",
+    "language": "اللغة",
+    "theme": "النمط",
+    "notifications": "الإشعارات",
+    "branding": "الهوية",
+    "save": "حفظ التعديلات",
+    "success": "تم تحديث الإعدادات محليًا (ربط الحفظ لاحقًا)."
+  },
+  "subscriptions": {
+    "title": "الاشتراكات",
+    "subtitle": "إدارة اشتراكات المطاعم والفوترة",
+    "search_placeholder": "ابحث عن اشتراك...",
+    "buttons": {
+      "add": "إضافة اشتراك",
+      "edit": "تعديل الاشتراك",
+      "delete": "حذف الاشتراك",
+      "save": "حفظ",
+      "cancel": "إلغاء",
+      "confirm_delete": "تأكيد الحذف"
+    },
+    "table": {
+      "tenant": "المطعم",
+      "plan": "اسم الباقة",
+      "price": "السعر",
+      "duration": "المدة",
+      "status": "الحالة",
+      "next_billing": "الفاتورة القادمة",
+      "created": "تاريخ الإنشاء",
+      "actions": "الإجراءات"
+    },
+    "status": {
+      "active": "نشط",
+      "trial": "تجريبي",
+      "expired": "منتهي",
+      "cancelled": "ملغي"
+    },
+    "messages": {
+      "created": "تم إنشاء الاشتراك بنجاح",
+      "updated": "تم تحديث الاشتراك بنجاح",
+      "deleted": "تم حذف الاشتراك بنجاح",
+      "create_failed": "فشل إنشاء الاشتراك",
+      "update_failed": "فشل تحديث الاشتراك",
+      "delete_failed": "فشل حذف الاشتراك"
+    },
+    "validation": {
+      "plan_required": "اسم الباقة مطلوب",
+      "price_positive": "يجب أن يكون السعر رقمًا موجبًا",
+      "duration_required": "المدة مطلوبة",
+      "start_required": "تاريخ البداية مطلوب",
+      "end_required": "تاريخ النهاية مطلوب"
+    },
+    "empty": "لا توجد اشتراكات",
+    "confirm_delete": "هل أنت متأكد من حذف هذا الاشتراك؟"
+  }
+}
