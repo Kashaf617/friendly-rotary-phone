@@ -158,24 +158,12 @@ export class AuthService {
 
     const subscription = this.subscriptionRepository.create({
       tenant_id: savedTenant.id,
-      plan: 'trial',
+      plan_name: 'Trial',
       status: 'active',
-      is_trial: true,
-      trial_days: 14,
-      starts_at: now,
-      expires_at: trialEnd,
-      monthly_price: 0,
-      max_users: 10,
-      max_branches: 1,
-      max_orders_per_month: 500,
-      features: {
-        pos: true,
-        inventory: true,
-        hr: false,
-        accounting: false,
-        analytics: true,
-        ai_insights: false,
-      },
+      price: 0,
+      duration_months: 1,
+      start_date: now,
+      end_date: trialEnd,
     });
 
     await this.subscriptionRepository.save(subscription);
