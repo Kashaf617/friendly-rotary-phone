@@ -166,15 +166,12 @@ export class SeedService implements OnModuleInit {
     const now = new Date();
     await this.subRepo.save(this.subRepo.create({
       tenant_id: tenant.id,
-      plan: 'professional', status: 'active', is_trial: false,
-      monthly_price: 599, currency: 'AED',
-      starts_at: now,
-      expires_at: new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000),
-      max_users: 25, max_branches: 3, max_orders_per_month: 5000,
-      features: {
-        pos: true, inventory: true, hr: true,
-        accounting: true, analytics: true, ai_insights: true,
-      },
+      plan_name: 'Professional',
+      status: 'active',
+      price: 599,
+      duration_months: 12,
+      start_date: now,
+      end_date: new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000),
     }));
 
     // 6. Create menu categories and items
