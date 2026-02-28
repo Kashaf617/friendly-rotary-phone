@@ -11,9 +11,13 @@ async function bootstrap() {
   // Global prefix
   app.setGlobalPrefix('api');
 
-  // CORS
+  // CORS - support both development and production
+  const corsOrigins = process.env.CORS_ORIGIN
+    ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
+    : ['http://localhost:3000', 'http://localhost:3001'];
+
   app.enableCors({
-    origin: ['http://localhost:3000', 'http://localhost:3001'],
+    origin: corsOrigins,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     credentials: true,
   });
