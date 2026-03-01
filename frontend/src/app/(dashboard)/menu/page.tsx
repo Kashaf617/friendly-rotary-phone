@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { menuApi } from '@/lib/api';
 import { formatCurrency, cn } from '@/lib/utils';
 import {
@@ -12,8 +12,11 @@ import { useI18n } from '@/lib/i18n-context';
 
 export default function MenuPage() {
   const { t } = useI18n();
+  const queryClient = useQueryClient();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [editingItem, setEditingItem] = useState<any>(null);
 
   const { data: categories } = useQuery({
     queryKey: ['menu-categories'],
@@ -57,6 +60,43 @@ export default function MenuPage() {
   const getCategoryName = (catId: string) =>
     (categories || []).find((c: any) => c.id === catId)?.name || t('menu.unknown_category');
 
+  // Mutations
+  const createMutation = useMutation({
+    mutationFn: (data: any) => menuApi.createItem(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['menu-items'] });
+      setShowAddModal(false);
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) => menuApi.updateItem(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['menu-items'] });
+      setEditingItem(null);
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => menuApi.deleteItem(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['menu-items'] });
+    },
+  });
+
+  const toggleMutation = useMutation({
+    mutationFn: (id: string) => menuApi.toggleAvailability(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['menu-items'] });
+    },
+  });
+
+  const handleDelete = (id: string) => {
+    if (confirm('Are you sure you want to delete this item?')) {
+      deleteMutation.mutate(id);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -64,7 +104,10 @@ export default function MenuPage() {
           <h1 className="text-2xl font-bold text-foreground">{t('menu.title')}</h1>
           <p className="text-sm text-muted-foreground">{t('menu.subtitle')}</p>
         </div>
-        <button className="flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent-dark transition-colors">
+        <button
+          onClick={() => setShowAddModal(true)}
+          className="flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent-dark transition-colors"
+        >
           <Plus className="h-4 w-4" /> {t('menu.add_item')}
         </button>
       </div>
@@ -153,13 +196,27 @@ export default function MenuPage() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-center gap-1.5">
-                        <button className="rounded p-1 hover:bg-muted transition-colors" title={t('menu.tooltip.toggle')}>
+                        <button
+                          onClick={() => toggleMutation.mutate(item.id)}
+                          disabled={toggleMutation.isPending}
+                          className="rounded p-1 hover:bg-muted transition-colors disabled:opacity-50"
+                          title={t('menu.tooltip.toggle')}
+                        >
                           {item.is_available ? <EyeOff className="h-3.5 w-3.5 text-muted-foreground" /> : <Eye className="h-3.5 w-3.5 text-muted-foreground" />}
                         </button>
-                        <button className="rounded p-1 hover:bg-muted transition-colors" title={t('menu.tooltip.edit')}>
+                        <button
+                          onClick={() => setEditingItem(item)}
+                          className="rounded p-1 hover:bg-muted transition-colors"
+                          title={t('menu.tooltip.edit')}
+                        >
                           <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
                         </button>
-                        <button className="rounded p-1 hover:bg-muted transition-colors" title={t('menu.tooltip.delete')}>
+                        <button
+                          onClick={() => handleDelete(item.id)}
+                          disabled={deleteMutation.isPending}
+                          className="rounded p-1 hover:bg-muted transition-colors disabled:opacity-50"
+                          title={t('menu.tooltip.delete')}
+                        >
                           <Trash2 className="h-3.5 w-3.5 text-danger" />
                         </button>
                       </div>
@@ -176,6 +233,273 @@ export default function MenuPage() {
             <p className="text-sm">{t('menu.empty')}</p>
           </div>
         )}
+      </div>
+
+      {/* Add Item Modal */}
+      {showAddModal && (
+        <AddMenuItemModal
+          categories={categories || []}
+          onClose={() => setShowAddModal(false)}
+          onSubmit={(data) => createMutation.mutate(data)}
+          isLoading={createMutation.isPending}
+        />
+      )}
+
+      {/* Edit Item Modal */}
+      {editingItem && (
+        <EditMenuItemModal
+          item={editingItem}
+          categories={categories || []}
+          onClose={() => setEditingItem(null)}
+          onSubmit={(data) => updateMutation.mutate({ id: editingItem.id, data })}
+          isLoading={updateMutation.isPending}
+        />
+      )}
+    </div>
+  );
+}
+
+// Add Item Modal Component
+function AddMenuItemModal({ categories, onClose, onSubmit, isLoading }: any) {
+  const [formData, setFormData] = useState({
+    category_id: categories[0]?.id || '',
+    name: '',
+    name_ar: '',
+    description: '',
+    price: '',
+    cost_price: '',
+    is_available: true,
+    is_active: true,
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSubmit({
+      ...formData,
+      price: parseFloat(formData.price),
+      cost_price: formData.cost_price ? parseFloat(formData.cost_price) : undefined,
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
+      <div className="w-full max-w-md rounded-xl bg-card p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <h2 className="mb-4 text-xl font-bold text-foreground">Add New Item</h2>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-muted-foreground mb-1">Category *</label>
+            <select
+              value={formData.category_id}
+              onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
+              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+              required
+            >
+              {categories.map((cat: any) => (
+                <option key={cat.id} value={cat.id}>{cat.name}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-muted-foreground mb-1">Item Name *</label>
+            <input
+              type="text"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-muted-foreground mb-1">Arabic Name</label>
+            <input
+              type="text"
+              value={formData.name_ar}
+              onChange={(e) => setFormData({ ...formData, name_ar: e.target.value })}
+              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-muted-foreground mb-1">Description</label>
+            <textarea
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+              rows={2}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-muted-foreground mb-1">Price (AED) *</label>
+              <input
+                type="number"
+                step="0.01"
+                value={formData.price}
+                onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-muted-foreground mb-1">Cost Price</label>
+              <input
+                type="number"
+                step="0.01"
+                value={formData.cost_price}
+                onChange={(e) => setFormData({ ...formData, cost_price: e.target.value })}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+              />
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="available"
+              checked={formData.is_available}
+              onChange={(e) => setFormData({ ...formData, is_available: e.target.checked })}
+              className="h-4 w-4 rounded border-border text-accent focus:ring-accent"
+            />
+            <label htmlFor="available" className="text-sm text-muted-foreground">Available</label>
+          </div>
+          <div className="flex gap-2 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 rounded-lg border border-border px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="flex-1 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent-dark transition-colors disabled:opacity-50"
+            >
+              {isLoading ? 'Creating...' : 'Create Item'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// Edit Item Modal Component
+function EditMenuItemModal({ item, categories, onClose, onSubmit, isLoading }: any) {
+  const [formData, setFormData] = useState({
+    category_id: item.category_id,
+    name: item.name,
+    name_ar: item.name_ar || '',
+    description: item.description || '',
+    price: item.price.toString(),
+    cost_price: item.cost_price?.toString() || '',
+    is_available: item.is_available,
+    is_active: item.is_active,
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSubmit({
+      ...formData,
+      price: parseFloat(formData.price),
+      cost_price: formData.cost_price ? parseFloat(formData.cost_price) : undefined,
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
+      <div className="w-full max-w-md rounded-xl bg-card p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <h2 className="mb-4 text-xl font-bold text-foreground">Edit Item</h2>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-muted-foreground mb-1">Category *</label>
+            <select
+              value={formData.category_id}
+              onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
+              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+              required
+            >
+              {categories.map((cat: any) => (
+                <option key={cat.id} value={cat.id}>{cat.name}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-muted-foreground mb-1">Item Name *</label>
+            <input
+              type="text"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-muted-foreground mb-1">Arabic Name</label>
+            <input
+              type="text"
+              value={formData.name_ar}
+              onChange={(e) => setFormData({ ...formData, name_ar: e.target.value })}
+              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-muted-foreground mb-1">Description</label>
+            <textarea
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+              rows={2}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-muted-foreground mb-1">Price (AED) *</label>
+              <input
+                type="number"
+                step="0.01"
+                value={formData.price}
+                onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-muted-foreground mb-1">Cost Price</label>
+              <input
+                type="number"
+                step="0.01"
+                value={formData.cost_price}
+                onChange={(e) => setFormData({ ...formData, cost_price: e.target.value })}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+              />
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="available-edit"
+              checked={formData.is_available}
+              onChange={(e) => setFormData({ ...formData, is_available: e.target.checked })}
+              className="h-4 w-4 rounded border-border text-accent focus:ring-accent"
+            />
+            <label htmlFor="available-edit" className="text-sm text-muted-foreground">Available</label>
+          </div>
+          <div className="flex gap-2 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 rounded-lg border border-border px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="flex-1 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent-dark transition-colors disabled:opacity-50"
+            >
+              {isLoading ? 'Updating...' : 'Update Item'}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );
