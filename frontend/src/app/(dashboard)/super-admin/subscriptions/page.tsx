@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { subscriptionApi } from '@/lib/api';
+import { subscriptionApi, tenantsApi } from '@/lib/api';
 import { formatDateTime, formatCurrency, cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n-context';
 import { CreditCard, Search, MoreHorizontal, Crown, Shield, Zap } from 'lucide-react';
@@ -184,7 +184,7 @@ interface SubscriptionPayload {
   tenant_id: string;
   plan_name: string;
   price: number;
-  duration: number;
+  duration_months: number;
   status: string;
   start_date: string;
   end_date: string;
@@ -196,12 +196,20 @@ function AddSubscriptionModal({ onClose, onSubmit, loading }: { onClose: () => v
     tenant_id: '',
     plan_name: '',
     price: '',
-    duration: '',
+    duration_months: '',
     status: 'active',
     start_date: new Date().toISOString().slice(0, 10),
     end_date: new Date().toISOString().slice(0, 10),
   });
   const [error, setError] = useState('');
+
+  const { data: tenants } = useQuery({
+    queryKey: ['tenants'],
+    queryFn: async () => {
+      const res = await tenantsApi.getAll();
+      return res.data?.data || res.data || [];
+    },
+  });
 
   const updateField = (key: keyof typeof form, value: string) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -215,12 +223,12 @@ function AddSubscriptionModal({ onClose, onSubmit, loading }: { onClose: () => v
       return;
     }
     const price = Number(form.price);
-    const duration = Number(form.duration);
+    const duration_months = Number(form.duration_months);
     if (Number.isNaN(price) || price < 0) {
       setError('Price must be a positive number.');
       return;
     }
-    if (Number.isNaN(duration) || duration <= 0) {
+    if (Number.isNaN(duration_months) || duration_months <= 0) {
       setError('Duration must be greater than zero.');
       return;
     }
@@ -228,7 +236,7 @@ function AddSubscriptionModal({ onClose, onSubmit, loading }: { onClose: () => v
       tenant_id: form.tenant_id,
       plan_name: form.plan_name,
       price,
-      duration,
+      duration_months,
       status: form.status,
       start_date: new Date(form.start_date).toISOString(),
       end_date: new Date(form.end_date).toISOString(),
@@ -248,13 +256,19 @@ function AddSubscriptionModal({ onClose, onSubmit, loading }: { onClose: () => v
         <form onSubmit={handleSubmit} className="space-y-3">
           <div>
             <label className="text-xs font-medium text-muted-foreground">{t('subscriptions.table.tenant')} *</label>
-            <input
-              type="text"
+            <select
               value={form.tenant_id}
               onChange={(e) => updateField('tenant_id', e.target.value)}
               className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
               required
-            />
+            >
+              <option value="">Select tenant...</option>
+              {(tenants || []).map((tenant: any) => (
+                <option key={tenant.id} value={tenant.id}>
+                  {tenant.name}
+                </option>
+              ))}
+            </select>
           </div>
           <div>
             <label className="text-xs font-medium text-muted-foreground">{t('subscriptions.table.plan')} *</label>
@@ -280,12 +294,12 @@ function AddSubscriptionModal({ onClose, onSubmit, loading }: { onClose: () => v
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-muted-foreground">{t('subscriptions.table.duration')} *</label>
+              <label className="text-xs font-medium text-muted-foreground">Duration (months) *</label>
               <input
                 type="number"
                 min="1"
-                value={form.duration}
-                onChange={(e) => updateField('duration', e.target.value)}
+                value={form.duration_months}
+                onChange={(e) => updateField('duration_months', e.target.value)}
                 className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
                 required
               />
