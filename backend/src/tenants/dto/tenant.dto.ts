@@ -26,7 +26,19 @@ export class CreateTenantDto {
 
   @IsOptional()
   @IsString()
+  country?: string;
+
+  @IsOptional()
+  @IsString()
   trn?: string;
+
+  @IsOptional()
+  @IsString()
+  subscription_plan?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  is_active?: boolean;
 }
 
 export class UpdateTenantDto {
