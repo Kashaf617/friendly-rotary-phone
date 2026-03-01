@@ -1,4 +1,5 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Tenant } from '../../tenants/entities/tenant.entity';
 
 @Entity('subscriptions')
 export class Subscription {
@@ -7,6 +8,10 @@ export class Subscription {
 
   @Column({ type: 'uuid' })
   tenant_id: string;
+
+  @ManyToOne(() => Tenant)
+  @JoinColumn({ name: 'tenant_id' })
+  tenant: Tenant;
 
   @Column({ length: 100 })
   plan_name: string;

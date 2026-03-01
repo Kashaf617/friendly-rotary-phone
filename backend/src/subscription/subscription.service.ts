@@ -20,7 +20,26 @@ export class SubscriptionService {
   }
 
   async findAll() {
-    return this.subscriptionRepository.find({ order: { created_at: 'DESC' } });
+    const subscriptions = await this.subscriptionRepository
+      .createQueryBuilder('subscription')
+      .leftJoinAndSelect('subscription.tenant', 'tenant')
+      .orderBy('subscription.created_at', 'DESC')
+      .getMany();
+
+    // Transform to match frontend expectations
+    return subscriptions.map(sub => ({
+      id: sub.id,
+      tenant_id: sub.tenant_id,
+      tenant_name: (sub as any).tenant?.name || 'Unknown',
+      plan: sub.plan_name,
+      plan_name: sub.plan_name,
+      price: sub.price,
+      status: sub.status,
+      next_billing: sub.end_date,
+      start_date: sub.start_date,
+      end_date: sub.end_date,
+      created_at: sub.created_at,
+    }));
   }
 
   async create(dto: CreateSubscriptionDto) {
