@@ -80,6 +80,15 @@ export const usersApi = {
   delete: (id: string) => api.delete(`/users/${id}`),
 };
 
+// Roles API
+export const rolesApi = {
+  getAll: () => api.get('/roles'),
+  getOne: (id: string) => api.get(`/roles/${id}`),
+  create: (data: any) => api.post('/roles', data),
+  update: (id: string, data: any) => api.put(`/roles/${id}`, data),
+  delete: (id: string) => api.delete(`/roles/${id}`),
+};
+
 // Menu API
 export const menuApi = {
   getCategories: () => api.get('/menu/categories'),
