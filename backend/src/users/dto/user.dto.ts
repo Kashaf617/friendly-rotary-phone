@@ -11,8 +11,9 @@ export class CreateUserDto {
   @IsString()
   first_name: string;
 
+  @IsOptional()
   @IsString()
-  last_name: string;
+  last_name?: string;
 
   @IsOptional()
   @IsString()
@@ -20,6 +21,14 @@ export class CreateUserDto {
 
   @IsUUID()
   role_id: string;
+
+  @IsOptional()
+  @IsUUID()
+  tenant_id?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  is_active?: boolean;
 }
 
 export class UpdateUserDto {

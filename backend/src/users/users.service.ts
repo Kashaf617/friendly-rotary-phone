@@ -12,6 +12,14 @@ export class UsersService {
     private userRepository: Repository<User>,
   ) {}
 
+  async findAll() {
+    return this.userRepository.find({
+      relations: ['role'],
+      select: ['id', 'email', 'first_name', 'last_name', 'phone', 'role_id', 'tenant_id', 'is_active', 'avatar_url', 'last_login_at', 'created_at'],
+      order: { created_at: 'DESC' },
+    });
+  }
+
   async findAllByTenant(tenantId: string) {
     return this.userRepository.find({
       where: { tenant_id: tenantId },
@@ -57,6 +65,13 @@ export class UsersService {
 
   async remove(id: string, tenantId: string) {
     const user = await this.findOne(id, tenantId);
+    await this.userRepository.remove(user);
+    return { message: 'User deleted' };
+  }
+
+  async removeById(id: string) {
+    const user = await this.userRepository.findOne({ where: { id } });
+    if (!user) throw new NotFoundException('User not found');
     await this.userRepository.remove(user);
     return { message: 'User deleted' };
   }

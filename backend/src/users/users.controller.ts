@@ -21,8 +21,12 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get()
-  @Roles('restaurant_admin', 'manager')
+  @Roles('super_admin', 'restaurant_admin', 'manager')
   findAll(@CurrentTenant() tenantId: string) {
+    if (!tenantId) {
+      // Super admin - get all users
+      return this.usersService.findAll();
+    }
     return this.usersService.findAllByTenant(tenantId);
   }
 
@@ -33,9 +37,11 @@ export class UsersController {
   }
 
   @Post()
-  @Roles('restaurant_admin')
+  @Roles('super_admin', 'restaurant_admin')
   create(@CurrentTenant() tenantId: string, @Body() dto: CreateUserDto) {
-    return this.usersService.create(tenantId, dto);
+    // Super admin can specify tenant_id in DTO, restaurant admin uses their own tenant
+    const targetTenantId = dto.tenant_id || tenantId;
+    return this.usersService.create(targetTenantId, dto);
   }
 
   @Put(':id')
@@ -49,8 +55,13 @@ export class UsersController {
   }
 
   @Delete(':id')
-  @Roles('restaurant_admin')
+  @Roles('super_admin', 'restaurant_admin')
   remove(@Param('id') id: string, @CurrentTenant() tenantId: string) {
+    // Super admin can delete any user, restaurant admin only in their tenant
+    if (!tenantId) {
+      // Super admin - delete without tenant restriction
+      return this.usersService.removeById(id);
+    }
     return this.usersService.remove(id, tenantId);
   }
 }
