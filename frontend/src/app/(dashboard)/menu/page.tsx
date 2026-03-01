@@ -67,6 +67,10 @@ export default function MenuPage() {
       queryClient.invalidateQueries({ queryKey: ['menu-items'] });
       setShowAddModal(false);
     },
+    onError: (error: any) => {
+      console.error('Create error:', error);
+      alert(`Failed to create item: ${error.response?.data?.message || error.message}`);
+    },
   });
 
   const updateMutation = useMutation({
@@ -74,6 +78,10 @@ export default function MenuPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['menu-items'] });
       setEditingItem(null);
+    },
+    onError: (error: any) => {
+      console.error('Update error:', error);
+      alert(`Failed to update item: ${error.response?.data?.message || error.message}`);
     },
   });
 
@@ -274,6 +282,8 @@ function AddMenuItemModal({ categories, onClose, onSubmit, isLoading }: any) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('Submitting:', formData);
+    console.log('Category ID:', formData.category_id);
     onSubmit({
       ...formData,
       price: parseFloat(formData.price),
