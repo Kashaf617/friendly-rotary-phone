@@ -1,6 +1,7 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { tenantsApi } from '@/lib/api';
 import { formatDateTime, cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n-context';
@@ -8,6 +9,8 @@ import { Building2, Search, MoreHorizontal, Crown, Shield } from 'lucide-react';
 
 export default function TenantsPage() {
   const { t } = useI18n();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const queryClient = useQueryClient();
 
   const { data: tenants } = useQuery({
     queryKey: ['tenants'],
@@ -23,6 +26,42 @@ export default function TenantsPage() {
     ],
   });
 
+  const createMutation = useMutation({
+    mutationFn: (data: any) => tenantsApi.create(data),
+    onSuccess: () => {
+      if (typeof window !== 'undefined') {
+        window.alert('Tenant created successfully!');
+      }
+      queryClient.invalidateQueries({ queryKey: ['tenants'] });
+      setIsModalOpen(false);
+    },
+    onError: (error: any) => {
+      if (typeof window !== 'undefined') {
+        window.alert(error.response?.data?.message || 'Failed to create tenant');
+      }
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => tenantsApi.delete(id),
+    onSuccess: () => {
+      if (typeof window !== 'undefined') {
+        window.alert('Tenant deleted successfully!');
+      }
+      queryClient.invalidateQueries({ queryKey: ['tenants'] });
+    },
+    onError: (error: any) => {
+      if (typeof window !== 'undefined') {
+        window.alert(error.response?.data?.message || 'Failed to delete tenant');
+      }
+    },
+  });
+
+  const handleDelete = (id: string, name: string) => {
+    if (!confirm(`Are you sure you want to delete ${name}?`)) return;
+    deleteMutation.mutate(id);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -30,7 +69,10 @@ export default function TenantsPage() {
           <h1 className="text-2xl font-bold text-foreground">Tenants</h1>
           <p className="text-sm text-muted-foreground">Manage all restaurant tenants</p>
         </div>
-        <button className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent-dark">
+        <button
+          onClick={() => setIsModalOpen(true)}
+          className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent-dark"
+        >
           Add Tenant
         </button>
       </div>
@@ -94,7 +136,11 @@ export default function TenantsPage() {
                   <td className="px-4 py-3 text-center text-xs text-muted-foreground">{tenant.user_count ?? '—'}</td>
                   <td className="px-4 py-3 text-xs text-muted-foreground">{tenant.created_at ? formatDateTime(tenant.created_at) : '—'}</td>
                   <td className="px-4 py-3 text-center">
-                    <button className="rounded p-1 hover:bg-muted transition-colors">
+                    <button
+                      onClick={() => handleDelete(tenant.id, tenant.name)}
+                      disabled={deleteMutation.isPending && deleteMutation.variables === tenant.id}
+                      className="rounded p-1 hover:bg-muted transition-colors disabled:opacity-50"
+                    >
                       <MoreHorizontal className="h-3.5 w-3.5 text-muted-foreground" />
                     </button>
                   </td>
@@ -109,6 +155,179 @@ export default function TenantsPage() {
             <p className="text-sm">No tenants found</p>
           </div>
         )}
+      </div>
+      {isModalOpen && (
+        <AddTenantModal
+          onClose={() => setIsModalOpen(false)}
+          onSubmit={(payload) => createMutation.mutate(payload)}
+          loading={createMutation.isPending}
+        />
+      )}
+    </div>
+  );
+}
+
+interface TenantPayload {
+  name: string;
+  slug: string;
+  contact_email: string;
+  contact_phone: string;
+  address: string;
+  city: string;
+  country: string;
+  subscription_plan: string;
+  is_active: boolean;
+}
+
+function AddTenantModal({ onClose, onSubmit, loading }: { onClose: () => void; onSubmit: (payload: TenantPayload) => void; loading: boolean; }) {
+  const [form, setForm] = useState({
+    name: '',
+    slug: '',
+    contact_email: '',
+    contact_phone: '',
+    address: '',
+    city: '',
+    country: 'UAE',
+    subscription_plan: 'starter',
+    is_active: true,
+  });
+  const [error, setError] = useState('');
+
+  const updateField = (key: keyof typeof form, value: string | boolean) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
+    if (key === 'name' && typeof value === 'string') {
+      setForm((prev) => ({ ...prev, slug: value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') }));
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    if (!form.name || !form.contact_email) {
+      setError('Name and email are required.');
+      return;
+    }
+    onSubmit(form);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div className="w-full max-w-2xl rounded-xl bg-card p-6 shadow-lg max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-card-foreground">Add New Tenant</h2>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground text-2xl">&times;</button>
+        </div>
+        {error && (
+          <div className="mb-3 rounded border border-danger/30 bg-danger/10 px-3 py-2 text-sm text-danger">{error}</div>
+        )}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Restaurant Name *</label>
+              <input
+                type="text"
+                value={form.name}
+                onChange={(e) => updateField('name', e.target.value)}
+                className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                required
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Slug</label>
+              <input
+                type="text"
+                value={form.slug}
+                onChange={(e) => updateField('slug', e.target.value)}
+                className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Contact Email *</label>
+              <input
+                type="email"
+                value={form.contact_email}
+                onChange={(e) => updateField('contact_email', e.target.value)}
+                className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                required
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Contact Phone</label>
+              <input
+                type="tel"
+                value={form.contact_phone}
+                onChange={(e) => updateField('contact_phone', e.target.value)}
+                className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground">Address</label>
+            <input
+              type="text"
+              value={form.address}
+              onChange={(e) => updateField('address', e.target.value)}
+              className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">City</label>
+              <input
+                type="text"
+                value={form.city}
+                onChange={(e) => updateField('city', e.target.value)}
+                className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Country</label>
+              <input
+                type="text"
+                value={form.country}
+                onChange={(e) => updateField('country', e.target.value)}
+                className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground">Subscription Plan</label>
+            <select
+              value={form.subscription_plan}
+              onChange={(e) => updateField('subscription_plan', e.target.value)}
+              className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+            >
+              <option value="trial">Trial</option>
+              <option value="starter">Starter</option>
+              <option value="professional">Professional</option>
+              <option value="enterprise">Enterprise</option>
+            </select>
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="is_active"
+              checked={form.is_active}
+              onChange={(e) => updateField('is_active', e.target.checked)}
+              className="rounded border-border"
+            />
+            <label htmlFor="is_active" className="text-sm text-muted-foreground">Active</label>
+          </div>
+          <div className="flex items-center justify-end gap-2 pt-2">
+            <button type="button" onClick={onClose} className="rounded-lg border border-border px-4 py-2 text-sm text-muted-foreground">
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent-dark disabled:opacity-50"
+            >
+              {loading ? 'Creating...' : 'Create Tenant'}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );
