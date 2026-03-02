@@ -85,6 +85,14 @@ export class CreateMenuItemDto {
   @IsOptional()
   @IsInt()
   preparation_time_minutes?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  is_available?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  is_active?: boolean;
 }
 
 export class UpdateMenuItemDto {
