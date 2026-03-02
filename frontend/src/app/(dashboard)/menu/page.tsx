@@ -248,7 +248,7 @@ export default function MenuPage() {
         <AddMenuItemModal
           categories={categories || []}
           onClose={() => setShowAddModal(false)}
-          onSubmit={(data) => createMutation.mutate(data)}
+          onSubmit={(data: any) => createMutation.mutate(data)}
           isLoading={createMutation.isPending}
         />
       )}
@@ -259,7 +259,7 @@ export default function MenuPage() {
           item={editingItem}
           categories={categories || []}
           onClose={() => setEditingItem(null)}
-          onSubmit={(data) => updateMutation.mutate({ id: editingItem.id, data })}
+          onSubmit={(data: any) => updateMutation.mutate({ id: editingItem.id, data })}
           isLoading={updateMutation.isPending}
         />
       )}
