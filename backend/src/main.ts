@@ -15,9 +15,10 @@ async function bootstrap() {
   app.setGlobalPrefix('api');
 
   // CORS - support both development and production
+  const defaultOrigins = ['http://localhost:3000', 'http://localhost:3001', 'https://boltloom.com', 'https://www.boltloom.com', 'https://app.boltloom.com'];
   const corsOrigins = process.env.CORS_ORIGIN
     ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
-    : ['http://localhost:3000', 'http://localhost:3001'];
+    : defaultOrigins;
 
   app.enableCors({
     origin: corsOrigins,

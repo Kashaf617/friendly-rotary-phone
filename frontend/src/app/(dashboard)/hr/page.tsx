@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { hrApi } from '@/lib/api';
 import { formatCurrency, cn } from '@/lib/utils';
 import { KpiCard } from '@/components/ui/kpi-card';
@@ -15,6 +15,8 @@ type Tab = 'employees' | 'payroll';
 export default function HRPage() {
   const [activeTab, setActiveTab] = useState<Tab>('employees');
   const [searchQuery, setSearchQuery] = useState('');
+  const [showAddModal, setShowAddModal] = useState(false);
+  const queryClient = useQueryClient();
 
   const { data: employees } = useQuery({
     queryKey: ['employees'],
@@ -67,9 +69,24 @@ export default function HRPage() {
     cancelled: 'bg-danger/10 text-danger',
   };
 
+  const createEmployeeMutation = useMutation({
+    mutationFn: (data: any) => hrApi.createEmployee(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['employees'] });
+      setShowAddModal(false);
+    },
+    onError: (error: any) => {
+      alert(`Failed to add employee: ${error?.response?.data?.message || error.message}`);
+    },
+  });
+
   const getEmployeeName = (empId: string) => {
     const emp = allEmployees.find((e: any) => e.id === empId);
     return emp ? `${emp.first_name} ${emp.last_name}` : 'Unknown';
+  };
+
+  const handleAddEmployee = () => {
+    setShowAddModal(true);
   };
 
   return (
@@ -79,7 +96,10 @@ export default function HRPage() {
           <h1 className="text-2xl font-bold text-foreground">HR & Payroll</h1>
           <p className="text-sm text-muted-foreground">Employee management, attendance, and payroll</p>
         </div>
-        <button className="flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent-dark transition-colors">
+        <button 
+          onClick={handleAddEmployee}
+          className="flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent-dark transition-colors"
+        >
           <UserPlus className="h-4 w-4" /> Add Employee
         </button>
       </div>
@@ -202,6 +222,179 @@ export default function HRPage() {
           </div>
         </>
       )}
+
+      {showAddModal && (
+        <AddEmployeeModal
+          onClose={() => setShowAddModal(false)}
+          onSubmit={(data: any) => createEmployeeMutation.mutate(data)}
+          isLoading={createEmployeeMutation.isPending}
+        />
+      )}
+    </div>
+  );
+}
+
+function AddEmployeeModal({ onClose, onSubmit, isLoading }: any) {
+  const [formData, setFormData] = useState({
+    employee_number: '',
+    first_name: '',
+    last_name: '',
+    email: '',
+    phone: '',
+    position: '',
+    department: 'Kitchen',
+    base_salary: '',
+    hire_date: new Date().toISOString().split('T')[0],
+    status: 'active',
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSubmit({
+      ...formData,
+      base_salary: Number(formData.base_salary),
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
+      <div className="w-full max-w-lg rounded-xl bg-card p-6 shadow-xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <h2 className="mb-4 text-xl font-bold text-foreground">Add New Employee</h2>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-muted-foreground mb-1">Employee Number *</label>
+              <input
+                type="text"
+                value={formData.employee_number}
+                onChange={(e) => setFormData({ ...formData, employee_number: e.target.value })}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+                placeholder="EMP-00001"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-muted-foreground mb-1">Hire Date *</label>
+              <input
+                type="date"
+                value={formData.hire_date}
+                onChange={(e) => setFormData({ ...formData, hire_date: e.target.value })}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+                required
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-muted-foreground mb-1">First Name *</label>
+              <input
+                type="text"
+                value={formData.first_name}
+                onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-muted-foreground mb-1">Last Name *</label>
+              <input
+                type="text"
+                value={formData.last_name}
+                onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+                required
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-muted-foreground mb-1">Email</label>
+              <input
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-muted-foreground mb-1">Phone</label>
+              <input
+                type="tel"
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-muted-foreground mb-1">Position *</label>
+              <input
+                type="text"
+                value={formData.position}
+                onChange={(e) => setFormData({ ...formData, position: e.target.value })}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+                placeholder="e.g. Chef, Cashier"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-muted-foreground mb-1">Department</label>
+              <select
+                value={formData.department}
+                onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+              >
+                <option value="Kitchen">Kitchen</option>
+                <option value="Front of House">Front of House</option>
+                <option value="Management">Management</option>
+                <option value="Operations">Operations</option>
+              </select>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-muted-foreground mb-1">Base Salary (AED) *</label>
+              <input
+                type="number"
+                step="0.01"
+                value={formData.base_salary}
+                onChange={(e) => setFormData({ ...formData, base_salary: e.target.value })}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-muted-foreground mb-1">Status</label>
+              <select
+                value={formData.status}
+                onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+              >
+                <option value="active">Active</option>
+                <option value="probation">Probation</option>
+                <option value="on_leave">On Leave</option>
+              </select>
+            </div>
+          </div>
+          <div className="flex gap-2 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 rounded-lg border border-border px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="flex-1 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent-dark transition-colors disabled:opacity-50"
+            >
+              {isLoading ? 'Creating...' : 'Add Employee'}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

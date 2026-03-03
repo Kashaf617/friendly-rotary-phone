@@ -64,6 +64,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   if (!user) return null;
 
   const displayBusinessName = branding.business_name || user.tenant_name || t('app.name');
+  const userInitials = `${user?.first_name?.[0] ?? ''}${user?.last_name?.[0] ?? ''}`.trim() || (user?.email?.[0]?.toUpperCase() ?? 'U');
   const computedLogoUrl = branding.business_logo_url?.startsWith('/uploads/')
     ? `${API_ORIGIN}${branding.business_logo_url}`
     : branding.business_logo_url || undefined;
@@ -99,10 +100,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     onError={() => setLogoFailed(true)}
                   />
                 ) : (
-                  <>
-                    {user.first_name[0]}
-                    {user.last_name[0]}
-                  </>
+                  <>{userInitials}</>
                 )}
               </div>
               <div className="hidden sm:block">

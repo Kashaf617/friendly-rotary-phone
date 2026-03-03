@@ -33,8 +33,8 @@ export default function SuppliersPage() {
       return res.data?.data || res.data;
     },
     placeholderData: [
-      { id: 'PO-20260221-001', supplier_name: 'Gulf Food Trading', total_amount: 32000, status: 'pending', due_date: new Date().toISOString() },
-      { id: 'PO-20260215-002', supplier_name: 'Arabian Coffee Roasters', total_amount: 7800, status: 'approved', due_date: new Date().toISOString() },
+      { id: 'PO-20260221-001', supplier_name: 'Gulf Food Trading', total_amount: 32000, status: 'pending', due_date: '2026-02-21T00:00:00.000Z' },
+      { id: 'PO-20260215-002', supplier_name: 'Arabian Coffee Roasters', total_amount: 7800, status: 'approved', due_date: '2026-02-15T00:00:00.000Z' },
     ],
   });
 
