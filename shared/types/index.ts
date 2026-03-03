@@ -47,4 +47,3 @@ export enum OrderType {
   DELIVERY = 'delivery',
 }
 
-export const UAE_VAT_RATE = 0.05; // 5%

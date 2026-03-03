@@ -8,8 +8,8 @@ import {
   UpdateOrderStatusDto,
   ProcessPaymentDto,
 } from './dto/order.dto';
-
-const UAE_VAT_RATE = 0.05;
+import { SettingsService } from '../settings/settings.service';
+import { AccountingService } from '../accounting/accounting.service';
 
 @Injectable()
 export class OrdersService {
@@ -21,6 +21,8 @@ export class OrdersService {
     private orderRepository: Repository<Order>,
     @InjectRepository(OrderItem)
     private orderItemRepository: Repository<OrderItem>,
+    private readonly settingsService: SettingsService,
+    private readonly accountingService: AccountingService,
   ) {}
 
   private generateOrderNumber(tenantId: string): string {
@@ -67,8 +69,10 @@ export class OrdersService {
       discountAmount = subtotal * (dto.discount_percent / 100);
     }
 
+    const { rate: vatRate } = await this.settingsService.getVatConfig(tenantId);
+
     const taxableAmount = subtotal - discountAmount;
-    const vatAmount = Number((taxableAmount * UAE_VAT_RATE).toFixed(2));
+    const vatAmount = Number((taxableAmount * vatRate).toFixed(2));
     const totalAmount = Number((taxableAmount + vatAmount).toFixed(2));
 
     const order = this.orderRepository.create({
@@ -82,7 +86,7 @@ export class OrdersService {
       subtotal,
       discount_amount: discountAmount,
       discount_percent: dto.discount_percent || 0,
-      vat_rate: UAE_VAT_RATE,
+      vat_rate: vatRate,
       vat_amount: vatAmount,
       total_amount: totalAmount,
       payment_status: 'unpaid',
@@ -177,6 +181,30 @@ export class OrdersService {
     if (dto.split_details) {
       order.split_details = dto.split_details;
     }
+
+    // Create invoice for this paid order
+    try {
+      const line_items = (order.items || []).map((it) => ({
+        description: it.item_name,
+        quantity: Number(it.quantity),
+        unit_price: Number(it.unit_price),
+        total: Number(it.total_price),
+      }));
+      await this.accountingService.createInvoiceFromOrder(tenantId, {
+        order_id: order.id,
+        customer_name: undefined,
+        trn: undefined,
+        line_items,
+        subtotal: Number(order.subtotal),
+        discount_amount: Number(order.discount_amount || 0),
+        vat_amount: Number(order.vat_amount || 0),
+        total_amount: Number(order.total_amount),
+        payment_method: dto.payment_method,
+      });
+    } catch (e) {
+      this.logger.error(`Failed to create invoice for order ${order.id}: ${e?.message || e}`);
+    }
+
     return this.orderRepository.save(order);
   }
 

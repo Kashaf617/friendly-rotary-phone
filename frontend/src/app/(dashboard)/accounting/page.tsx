@@ -1,13 +1,14 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { accountingApi } from '@/lib/api';
 import { formatCurrency, formatDate, cn } from '@/lib/utils';
 import { KpiCard } from '@/components/ui/kpi-card';
 import {
   Receipt, DollarSign, TrendingUp, TrendingDown,
-  FileText, ArrowUpRight, ArrowDownRight, Filter,
+  FileText, ArrowUpRight, ArrowDownRight, Filter, Printer,
 } from 'lucide-react';
 
 type Tab = 'invoices' | 'transactions' | 'reports';
@@ -70,7 +71,7 @@ export default function AccountingPage() {
         <KpiCard title="Total Income" value={formatCurrency(totalIncome)} icon={TrendingUp} color="accent" />
         <KpiCard title="Total Expenses" value={formatCurrency(totalExpenses)} icon={TrendingDown} color="danger" />
         <KpiCard title="Net Profit" value={formatCurrency(totalIncome - totalExpenses)} icon={DollarSign} color="secondary" />
-        <KpiCard title="VAT Collected" value={formatCurrency(totalVat)} subtitle="5% UAE VAT" icon={Receipt} color="warning" />
+        <KpiCard title="VAT Collected" value={formatCurrency(totalVat)} subtitle="VAT" icon={Receipt} color="warning" />
       </div>
 
       {/* Tabs */}
@@ -95,10 +96,11 @@ export default function AccountingPage() {
                   <th className="px-4 py-3 text-left font-medium">Invoice #</th>
                   <th className="px-4 py-3 text-left font-medium">Customer</th>
                   <th className="px-4 py-3 text-right font-medium">Subtotal</th>
-                  <th className="px-4 py-3 text-right font-medium">VAT (5%)</th>
+                  <th className="px-4 py-3 text-right font-medium">VAT</th>
                   <th className="px-4 py-3 text-right font-medium">Total</th>
                   <th className="px-4 py-3 text-center font-medium">Status</th>
                   <th className="px-4 py-3 text-left font-medium">Date</th>
+                  <th className="px-4 py-3 text-center font-medium">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -115,6 +117,15 @@ export default function AccountingPage() {
                       </span>
                     </td>
                     <td className="px-4 py-3 text-xs text-muted-foreground">{formatDate(inv.created_at)}</td>
+                    <td className="px-4 py-3 text-center">
+                      <Link
+                        href={`/invoices/${inv.id}`}
+                        className="inline-flex items-center gap-1 rounded border border-border px-2 py-1 text-[11px] hover:bg-muted"
+                      >
+                        <Printer className="h-3.5 w-3.5" />
+                        Print
+                      </Link>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -179,7 +190,7 @@ export default function AccountingPage() {
               <Receipt className="h-5 w-5 text-warning" />
               <h3 className="text-sm font-semibold text-card-foreground">VAT Report</h3>
             </div>
-            <p className="text-xs text-muted-foreground mb-4">UAE VAT (5%) report for filing with FTA.</p>
+            <p className="text-xs text-muted-foreground mb-4">VAT report for filing with FTA.</p>
             <div className="space-y-3">
               <div className="flex justify-between text-xs">
                 <span className="text-muted-foreground">Total Taxable Sales</span>

@@ -3,8 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Invoice } from './entities/invoice.entity';
 import { Transaction } from './entities/transaction.entity';
-
-const UAE_VAT_RATE = 0.05;
+import { SettingsService } from '../settings/settings.service';
 
 @Injectable()
 export class AccountingService {
@@ -16,6 +15,7 @@ export class AccountingService {
     private invoiceRepository: Repository<Invoice>,
     @InjectRepository(Transaction)
     private transactionRepository: Repository<Transaction>,
+    private readonly settingsService: SettingsService,
   ) {}
 
   // Invoices
@@ -41,6 +41,8 @@ export class AccountingService {
       payment_method?: string;
     },
   ) {
+    const { rate: vatRate } = await this.settingsService.getVatConfig(tenantId);
+
     const invoice = this.invoiceRepository.create({
       tenant_id: tenantId,
       invoice_number: this.generateInvoiceNumber(tenantId),
@@ -49,7 +51,7 @@ export class AccountingService {
       trn: orderData.trn,
       line_items: orderData.line_items,
       subtotal: orderData.subtotal,
-      vat_rate: UAE_VAT_RATE,
+      vat_rate: vatRate,
       vat_amount: orderData.vat_amount,
       discount_amount: orderData.discount_amount,
       total_amount: orderData.total_amount,
@@ -150,6 +152,8 @@ export class AccountingService {
   }
 
   async getVatReport(tenantId: string, startDate: string, endDate: string) {
+    const { rate: vatRate } = await this.settingsService.getVatConfig(tenantId);
+
     const invoices = await this.invoiceRepository
       .createQueryBuilder('i')
       .select('SUM(i.vat_amount)', 'total_vat_collected')
@@ -166,7 +170,7 @@ export class AccountingService {
       total_sales: Number(invoices.total_sales || 0).toFixed(2),
       total_vat_collected: Number(invoices.total_vat_collected || 0).toFixed(2),
       invoice_count: Number(invoices.invoice_count),
-      vat_rate: `${UAE_VAT_RATE * 100}%`,
+      vat_rate: `${vatRate * 100}%`,
       currency: 'AED',
     };
   }

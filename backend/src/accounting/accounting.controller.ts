@@ -27,6 +27,7 @@ export class AccountingController {
   }
 
   @Get('invoices/:id')
+  @Roles('restaurant_admin', 'manager', 'cashier')
   findInvoice(@Param('id') id: string, @CurrentTenant() tenantId: string) {
     return this.accountingService.findInvoice(id, tenantId);
   }

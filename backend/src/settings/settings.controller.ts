@@ -22,13 +22,13 @@ export class SettingsController {
   constructor(private readonly settingsService: SettingsService) {}
 
   @Get()
-  @Roles('restaurant_admin', 'manager')
+  @Roles('restaurant_admin', 'manager', 'cashier', 'waiter')
   findAll(@CurrentTenant() tenantId: string) {
     return this.settingsService.findAllByTenant(tenantId);
   }
 
   @Get(':key')
-  @Roles('restaurant_admin', 'manager')
+  @Roles('restaurant_admin', 'manager', 'cashier', 'waiter')
   findOne(@CurrentTenant() tenantId: string, @Param('key') key: string) {
     return this.settingsService.findByKey(tenantId, key);
   }

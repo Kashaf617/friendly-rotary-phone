@@ -1,6 +1,7 @@
 import axios from 'axios';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+export const API_ORIGIN = API_BASE_URL.replace(/\/api$/, '');
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -22,30 +23,54 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-    const originalRequest = error.config;
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
+    const config: any = error.config || {};
+    const method = (config.method || 'get').toLowerCase();
+    const message = String(error?.message || '');
+    const isNetworkError =
+      !error.response ||
+      error.code === 'ECONNABORTED' ||
+      message.toLowerCase().includes('goaway') ||
+      message.toLowerCase().includes('server_shutting_down');
+    const idempotent = ['get', 'head', 'options'].includes(method);
+
+    // Retry transient network errors for idempotent requests only (max 2 retries with backoff)
+    if (isNetworkError && idempotent) {
+      config._retryCount = (config._retryCount || 0) + 1;
+      if (config._retryCount <= 2) {
+        const delayMs = 250 * Math.pow(2, config._retryCount - 1);
+        await new Promise((r) => setTimeout(r, delayMs));
+        return api(config);
+      }
+    }
+
+    // Handle 401 by refreshing token once
+    if (error.response?.status === 401 && !config._refreshTried) {
+      config._refreshTried = true;
       try {
-        const refreshToken = localStorage.getItem('refresh_token');
+        const refreshToken = typeof window !== 'undefined' ? localStorage.getItem('refresh_token') : null;
         if (refreshToken) {
           const res = await axios.post(`${API_BASE_URL}/auth/refresh`, {
             refresh_token: refreshToken,
           });
           const { access_token, refresh_token: newRefresh } = res.data.data || res.data;
-          localStorage.setItem('access_token', access_token);
-          localStorage.setItem('refresh_token', newRefresh);
-          originalRequest.headers.Authorization = `Bearer ${access_token}`;
-          return api(originalRequest);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('access_token', access_token);
+            localStorage.setItem('refresh_token', newRefresh);
+          }
+          config.headers = config.headers || {};
+          config.headers.Authorization = `Bearer ${access_token}`;
+          return api(config);
         }
       } catch {
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
-        localStorage.removeItem('user');
         if (typeof window !== 'undefined') {
+          localStorage.removeItem('access_token');
+          localStorage.removeItem('refresh_token');
+          localStorage.removeItem('user');
           window.location.href = '/login';
         }
       }
     }
+
     return Promise.reject(error);
   },
 );
@@ -211,4 +236,9 @@ export const settingsApi = {
   upsert: (data: { key: string; value: string }) => api.post('/settings', data),
   update: (key: string, data: { value: string }) => api.put(`/settings/${key}`, data),
   delete: (key: string) => api.delete(`/settings/${key}`),
+};
+
+export const uploadsApi = {
+  uploadBase64: (data_url: string, filename?: string) =>
+    api.post('/uploads/base64', { data_url, filename }),
 };

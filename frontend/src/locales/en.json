@@ -54,7 +54,7 @@
       "monthly_revenue": "Monthly Revenue",
       "monthly_orders": "Monthly Orders",
       "vat_collected": "VAT Collected",
-      "this_month_vat": "This month (5%)",
+      "this_month_vat": "This month",
       "vs_yesterday": "vs yesterday",
       "avg": "Avg",
       "per_order": "order",
@@ -99,7 +99,7 @@
     "summary": {
       "subtotal": "Subtotal",
       "discount": "Discount",
-      "vat": "VAT (5%)",
+      "vat": "VAT",
       "total": "Total"
     },
     "payment": {
@@ -244,9 +244,16 @@
     "language": "Language",
     "theme": "Theme",
     "notifications": "Notifications",
+    "vat": "VAT",
+    "vat_enabled": "VAT Enabled",
+    "vat_enabled_help": "Apply VAT to orders and invoices",
+    "vat_rate": "VAT Rate (%)",
     "branding": "Branding",
+    "business_name": "Business Name",
+    "business_logo_url": "Business Logo URL",
     "save": "Save Changes",
-    "success": "Settings updated locally (persist backend integration later)."
+    "success": "Settings updated successfully.",
+    "error": "Failed to save settings. Please try again."
   },
   "subscriptions": {
     "title": "Subscriptions",

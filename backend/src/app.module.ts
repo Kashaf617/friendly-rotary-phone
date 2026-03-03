@@ -22,6 +22,7 @@ import { AnalyticsModule } from './analytics/analytics.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { SettingsModule } from './settings/settings.module';
 import { SeedModule } from './common/seed/seed.module';
+import { UploadsModule } from './uploads/uploads.module';
 
 // Entities
 import { Tenant } from './tenants/entities/tenant.entity';
@@ -133,6 +134,7 @@ import { Setting } from './settings/entities/setting.entity';
     NotificationsModule,
     SettingsModule,
     SeedModule,
+    UploadsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

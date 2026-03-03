@@ -2,7 +2,8 @@
 
 import { useState, useMemo, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { menuApi, ordersApi } from '@/lib/api';
+import { menuApi, ordersApi, settingsApi } from '@/lib/api';
+import { useAuth } from '@/lib/auth-context';
 import { formatCurrency, cn } from '@/lib/utils';
 import {
   Search, Plus, Minus, Trash2, ShoppingCart, CreditCard,
@@ -20,10 +21,9 @@ interface CartItem {
   special_instructions: string;
 }
 
-const VAT_RATE = 0.05;
-
 export default function POSPage() {
   const { t, locale } = useI18n();
+  const { user } = useAuth();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -35,6 +35,49 @@ export default function POSPage() {
   const [showPayment, setShowPayment] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [notes, setNotes] = useState('');
+
+  const tenantId = user?.tenant_id;
+
+  const { data: settings } = useQuery({
+    queryKey: ['settings', tenantId],
+    enabled: !!tenantId,
+    queryFn: async () => {
+      try {
+        const res = await settingsApi.getAll();
+        return res.data?.data || res.data || [];
+      } catch {
+        return [];
+      }
+    },
+    placeholderData: [],
+  });
+
+  const vatConfig = useMemo(() => {
+    const byKey = new Map<string, string>((settings || []).map((s: any) => [s.key, s.value]));
+
+    const enabledRaw = byKey.get('VAT_ENABLED')?.toLowerCase();
+    const enabled =
+      enabledRaw === undefined
+        ? true
+        : enabledRaw === 'true' || enabledRaw === '1' || enabledRaw === 'yes';
+
+    let rate = byKey.get('VAT_RATE') ? Number(byKey.get('VAT_RATE')) : 0.05;
+    if (!Number.isFinite(rate) || rate < 0) rate = 0.05;
+    if (rate > 1) rate = rate / 100;
+
+    return { enabled, rate: enabled ? rate : 0 };
+  }, [settings]);
+
+  const vatRatePercent = useMemo(() => {
+    const pct = Number((vatConfig.rate * 100).toFixed(2));
+    return Number.isFinite(pct) ? pct : 0;
+  }, [vatConfig.rate]);
+
+  const vatLabel = useMemo(() => {
+    if (!vatConfig.enabled) return t('pos.summary.vat');
+    const display = vatRatePercent % 1 === 0 ? vatRatePercent.toFixed(0) : vatRatePercent.toString();
+    return `${t('pos.summary.vat')} (${display}%)`;
+  }, [t, vatConfig.enabled, vatRatePercent]);
 
   // Fetch menu categories
   const { data: categories } = useQuery({
@@ -105,11 +148,11 @@ export default function POSPage() {
 
     const discountAmount = subtotal * (discountPercent / 100);
     const taxable = subtotal - discountAmount;
-    const vatAmount = Number((taxable * VAT_RATE).toFixed(2));
+    const vatAmount = Number((taxable * vatConfig.rate).toFixed(2));
     const total = Number((taxable + vatAmount).toFixed(2));
 
     return { subtotal, discountAmount, vatAmount, total, itemCount: cart.reduce((s, i) => s + i.quantity, 0) };
-  }, [cart, discountPercent]);
+  }, [cart, discountPercent, vatConfig.rate]);
 
   // Cart actions
   const addToCart = useCallback((item: any) => {
@@ -409,7 +452,7 @@ export default function POSPage() {
                 </div>
               )}
               <div className="flex justify-between text-xs text-muted-foreground">
-                <span>{t('pos.summary.vat')}</span>
+                <span>{vatLabel}</span>
                 <span>{formatCurrency(calculations.vatAmount)}</span>
               </div>
               <div className="flex justify-between border-t border-border pt-2 text-sm font-bold text-card-foreground">

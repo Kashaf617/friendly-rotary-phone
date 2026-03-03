@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Supplier } from './entities/supplier.entity';
 import { PurchaseOrder } from './entities/purchase-order.entity';
+import { SettingsService } from '../settings/settings.service';
 
 @Injectable()
 export class SuppliersService {
@@ -11,6 +12,7 @@ export class SuppliersService {
     private supplierRepository: Repository<Supplier>,
     @InjectRepository(PurchaseOrder)
     private poRepository: Repository<PurchaseOrder>,
+    private readonly settingsService: SettingsService,
   ) {}
 
   // Suppliers
@@ -74,7 +76,8 @@ export class SuppliersService {
 
   async createPurchaseOrder(tenantId: string, data: Partial<PurchaseOrder>) {
     const subtotal = (data.items || []).reduce((sum, item) => sum + item.total, 0);
-    const vatAmount = Number((subtotal * 0.05).toFixed(2));
+    const { rate: vatRate } = await this.settingsService.getVatConfig(tenantId);
+    const vatAmount = Number((subtotal * vatRate).toFixed(2));
 
     const po = this.poRepository.create({
       ...data,

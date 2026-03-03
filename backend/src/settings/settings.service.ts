@@ -50,4 +50,31 @@ export class SettingsService {
     await this.settingRepository.remove(setting);
     return { success: true };
   }
+
+  async getVatConfig(tenantId: string) {
+    const enabledSetting = await this.findByKey(tenantId, 'VAT_ENABLED');
+    const rateSetting = await this.findByKey(tenantId, 'VAT_RATE');
+
+    const enabledRaw = enabledSetting?.value?.toLowerCase();
+    const enabled =
+      enabledRaw === undefined
+        ? true
+        : enabledRaw === 'true' || enabledRaw === '1' || enabledRaw === 'yes';
+
+    let rate = rateSetting?.value ? Number(rateSetting.value) : 0.05;
+    if (!Number.isFinite(rate) || rate < 0) rate = 0.05;
+    if (rate > 1) rate = rate / 100;
+
+    return { enabled, rate: enabled ? rate : 0 };
+  }
+
+  async getBrandingConfig(tenantId: string) {
+    const nameSetting = await this.findByKey(tenantId, 'BUSINESS_NAME');
+    const logoSetting = await this.findByKey(tenantId, 'BUSINESS_LOGO_URL');
+
+    return {
+      business_name: nameSetting?.value || null,
+      business_logo_url: logoSetting?.value || null,
+    };
+  }
 }
