@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { suppliersApi } from '@/lib/api';
 import { formatCurrency, cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n-context';
@@ -10,6 +10,8 @@ import { Building2, Search, Truck, ClipboardList, DollarSign, Clock3 } from 'luc
 export default function SuppliersPage() {
   const { t } = useI18n();
   const [search, setSearch] = useState('');
+  const [showAddModal, setShowAddModal] = useState(false);
+  const queryClient = useQueryClient();
 
   const { data: suppliers } = useQuery({
     queryKey: ['suppliers'],
@@ -52,6 +54,17 @@ export default function SuppliersPage() {
     );
   }, [suppliers, search]);
 
+  const createSupplier = useMutation({
+    mutationFn: (data: any) => suppliersApi.createSupplier(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['suppliers'] });
+      setShowAddModal(false);
+    },
+    onError: (error: any) => {
+      alert(`Failed to create supplier: ${error?.response?.data?.message || error.message}`);
+    },
+  });
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -59,8 +72,11 @@ export default function SuppliersPage() {
           <h1 className="text-2xl font-bold text-foreground">{t('suppliers.title')}</h1>
           <p className="text-sm text-muted-foreground">{t('suppliers.subtitle')}</p>
         </div>
-        <button className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent-dark transition-colors">
-          {t('menu.add_item')}
+        <button
+          onClick={() => setShowAddModal(true)}
+          className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent-dark transition-colors"
+        >
+          {t('suppliers.add_supplier') || 'Add Supplier'}
         </button>
       </div>
 
@@ -175,6 +191,14 @@ export default function SuppliersPage() {
           </div>
         )}
       </div>
+
+      {showAddModal && (
+        <AddSupplierModal
+          onClose={() => setShowAddModal(false)}
+          onSubmit={(data: any) => createSupplier.mutate(data)}
+          isLoading={createSupplier.isPending}
+        />
+      )}
     </div>
   );
 }
@@ -188,6 +212,95 @@ function SummaryCard({ icon: Icon, title, value, color }: { icon: React.ElementT
       <div>
         <p className="text-xs text-muted-foreground">{title}</p>
         <p className="text-lg font-bold text-card-foreground">{value}</p>
+      </div>
+    </div>
+  );
+}
+
+function AddSupplierModal({ onClose, onSubmit, isLoading }: any) {
+  const [formData, setFormData] = useState({
+    name: '',
+    category: '',
+    contact_email: '',
+    contact_phone: '',
+    status: 'active',
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSubmit({
+      name: formData.name,
+      category: formData.category || undefined,
+      contact_email: formData.contact_email || undefined,
+      contact_phone: formData.contact_phone || undefined,
+      status: formData.status,
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
+      <div className="w-full max-w-md rounded-xl bg-card p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <h2 className="mb-4 text-xl font-bold text-foreground">Add Supplier</h2>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-muted-foreground mb-1">Name *</label>
+            <input
+              type="text"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-muted-foreground mb-1">Category</label>
+            <input
+              type="text"
+              value={formData.category}
+              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-muted-foreground mb-1">Email</label>
+              <input
+                type="email"
+                value={formData.contact_email}
+                onChange={(e) => setFormData({ ...formData, contact_email: e.target.value })}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-muted-foreground mb-1">Phone</label>
+              <input
+                type="text"
+                value={formData.contact_phone}
+                onChange={(e) => setFormData({ ...formData, contact_phone: e.target.value })}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-muted-foreground mb-1">Status</label>
+            <select
+              value={formData.status}
+              onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+            >
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+          </div>
+          <div className="flex gap-2 pt-2">
+            <button type="button" onClick={onClose} className="flex-1 rounded-lg border border-border px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted transition-colors">
+              Cancel
+            </button>
+            <button type="submit" disabled={isLoading} className="flex-1 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent-dark transition-colors disabled:opacity-50">
+              {isLoading ? 'Creating...' : 'Create'}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

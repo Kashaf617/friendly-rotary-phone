@@ -5,6 +5,7 @@ import { join } from 'path';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/filters/http-exception.filter';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
+import { DataSource } from 'typeorm';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
@@ -39,6 +40,18 @@ async function bootstrap() {
   // Global filters & interceptors
   app.useGlobalFilters(new AllExceptionsFilter());
   app.useGlobalInterceptors(new TransformInterceptor());
+
+  // Health endpoint (API + DB check)
+  const dataSource = app.get(DataSource);
+  const server = app.getHttpAdapter().getInstance();
+  server.get('/api/health', async (_req: any, res: any) => {
+    try {
+      await dataSource.query('SELECT 1');
+      res.json({ status: 'ok', db: 'up' });
+    } catch (e) {
+      res.status(500).json({ status: 'error', db: 'down', message: String(e?.message || e) });
+    }
+  });
 
   const port = process.env.PORT ?? 3001;
   await app.listen(port);
