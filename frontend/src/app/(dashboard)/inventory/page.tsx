@@ -1,6 +1,6 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { inventoryApi } from '@/lib/api';
 import { formatCurrency, cn } from '@/lib/utils';
 import { KpiCard } from '@/components/ui/kpi-card';
@@ -12,6 +12,8 @@ import { useState } from 'react';
 
 export default function InventoryPage() {
   const [searchQuery, setSearchQuery] = useState('');
+  const [showAddModal, setShowAddModal] = useState(false);
+  const queryClient = useQueryClient();
 
   const { data: items } = useQuery({
     queryKey: ['inventory'],
@@ -29,6 +31,19 @@ export default function InventoryPage() {
       { id: '7', name: 'Arabic Bread', sku: 'INV-007', unit: 'pack', stock_level: 60, low_stock_threshold: 20, unit_cost: 3, category: 'Bakery', is_active: true },
       { id: '8', name: 'Lemons', sku: 'INV-008', unit: 'kg', stock_level: 18, low_stock_threshold: 10, unit_cost: 6, category: 'Fruits', is_active: true },
     ],
+  });
+
+  const createMutation = useMutation({
+    mutationFn: (data: any) => inventoryApi.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['inventory'] });
+      queryClient.invalidateQueries({ queryKey: ['low-stock'] });
+      queryClient.invalidateQueries({ queryKey: ['inventory-value'] });
+      setShowAddModal(false);
+    },
+    onError: (error: any) => {
+      alert(`Failed to add item: ${error?.response?.data?.message || error.message}`);
+    },
   });
 
   const { data: lowStockItems } = useQuery({
@@ -62,7 +77,10 @@ export default function InventoryPage() {
           <h1 className="text-2xl font-bold text-foreground">Inventory</h1>
           <p className="text-sm text-muted-foreground">Track stock levels and manage supplies</p>
         </div>
-        <button className="flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent-dark transition-colors">
+        <button
+          onClick={() => setShowAddModal(true)}
+          className="flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent-dark transition-colors"
+        >
           <Plus className="h-4 w-4" /> Add Item
         </button>
       </div>
@@ -142,6 +160,154 @@ export default function InventoryPage() {
             </tbody>
           </table>
         </div>
+      </div>
+      {showAddModal && (
+        <AddInventoryItemModal
+          onClose={() => setShowAddModal(false)}
+          onSubmit={(data: any) => createMutation.mutate(data)}
+          isLoading={createMutation.isPending}
+        />
+      )}
+    </div>
+  );
+}
+
+function AddInventoryItemModal({ onClose, onSubmit, isLoading }: any) {
+  const [formData, setFormData] = useState({
+    name: '',
+    sku: '',
+    unit: 'kg',
+    stock_level: '0',
+    low_stock_threshold: '10',
+    unit_cost: '',
+    category: '',
+    is_active: true,
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSubmit({
+      name: formData.name,
+      sku: formData.sku || undefined,
+      unit: formData.unit,
+      stock_level: Number(formData.stock_level || 0),
+      low_stock_threshold: Number(formData.low_stock_threshold || 0),
+      unit_cost: formData.unit_cost ? Number(formData.unit_cost) : undefined,
+      category: formData.category || undefined,
+      is_active: formData.is_active,
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
+      <div className="w-full max-w-md rounded-xl bg-card p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <h2 className="mb-4 text-xl font-bold text-foreground">Add Inventory Item</h2>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-muted-foreground mb-1">Item Name *</label>
+            <input
+              type="text"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+              required
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-muted-foreground mb-1">SKU</label>
+              <input
+                type="text"
+                value={formData.sku}
+                onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-muted-foreground mb-1">Unit *</label>
+              <select
+                value={formData.unit}
+                onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+                required
+              >
+                <option value="kg">kg</option>
+                <option value="liter">liter</option>
+                <option value="piece">piece</option>
+                <option value="pack">pack</option>
+              </select>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-muted-foreground mb-1">Stock Level</label>
+              <input
+                type="number"
+                step="0.01"
+                value={formData.stock_level}
+                onChange={(e) => setFormData({ ...formData, stock_level: e.target.value })}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-muted-foreground mb-1">Low Stock Threshold</label>
+              <input
+                type="number"
+                step="0.01"
+                value={formData.low_stock_threshold}
+                onChange={(e) => setFormData({ ...formData, low_stock_threshold: e.target.value })}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-muted-foreground mb-1">Unit Cost</label>
+              <input
+                type="number"
+                step="0.01"
+                value={formData.unit_cost}
+                onChange={(e) => setFormData({ ...formData, unit_cost: e.target.value })}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-muted-foreground mb-1">Category</label>
+              <input
+                type="text"
+                value={formData.category}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+              />
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="active"
+              checked={formData.is_active}
+              onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+              className="h-4 w-4 rounded border-border text-accent focus:ring-accent"
+            />
+            <label htmlFor="active" className="text-sm text-muted-foreground">Active</label>
+          </div>
+          <div className="flex gap-2 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 rounded-lg border border-border px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="flex-1 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent-dark transition-colors disabled:opacity-50"
+            >
+              {isLoading ? 'Creating...' : 'Create'}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

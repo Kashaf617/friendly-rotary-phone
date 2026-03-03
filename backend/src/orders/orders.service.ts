@@ -190,7 +190,7 @@ export class OrdersService {
         unit_price: Number(it.unit_price),
         total: Number(it.total_price),
       }));
-      await this.accountingService.createInvoiceFromOrder(tenantId, {
+      const invoice = await this.accountingService.createInvoiceFromOrder(tenantId, {
         order_id: order.id,
         customer_name: undefined,
         trn: undefined,
@@ -201,11 +201,17 @@ export class OrdersService {
         total_amount: Number(order.total_amount),
         payment_method: dto.payment_method,
       });
+      const savedOrder = await this.orderRepository.save(order);
+      return {
+        order: savedOrder,
+        invoice_id: invoice?.id,
+        invoice_number: invoice?.invoice_number,
+      };
     } catch (e) {
       this.logger.error(`Failed to create invoice for order ${order.id}: ${e?.message || e}`);
+      const savedOrder = await this.orderRepository.save(order);
+      return { order: savedOrder };
     }
-
-    return this.orderRepository.save(order);
   }
 
   async cancelOrder(id: string, tenantId: string) {

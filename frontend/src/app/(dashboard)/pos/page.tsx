@@ -35,6 +35,7 @@ export default function POSPage() {
   const [showPayment, setShowPayment] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [notes, setNotes] = useState('');
+  const [receipt, setReceipt] = useState<{ invoiceId?: string; invoiceNumber?: string; url?: string } | null>(null);
 
   const tenantId = user?.tenant_id;
 
@@ -204,7 +205,7 @@ export default function POSPage() {
     if (cart.length === 0) return;
     setProcessing(true);
     try {
-      await ordersApi.create({
+      const createRes = await ordersApi.create({
         order_type: orderType,
         table_number: tableNumber || undefined,
         guest_count: guestCount,
@@ -212,7 +213,21 @@ export default function POSPage() {
         discount_percent: discountPercent,
         notes: notes || undefined,
       });
-      // After creating order, process payment immediately
+      const created = createRes.data?.data || createRes.data;
+      if (created?.id) {
+        const payRes = await ordersApi.processPayment(created.id, { payment_method: paymentMethod });
+        const payData = payRes.data?.data || payRes.data;
+        const invoiceId = payData?.invoice_id;
+        const invoiceNumber = payData?.invoice_number;
+        if (invoiceId) {
+          const url = `${window.location.origin}/invoices/${invoiceId}`;
+          // Open print page in a new tab immediately
+          window.open(url, '_blank');
+          // Show a small receipt modal with QR for convenience
+          setReceipt({ invoiceId, invoiceNumber, url });
+        }
+      }
+      // Reset cart and UI
       clearCart();
       setTableNumber('');
       setGuestCount(1);
@@ -509,6 +524,41 @@ export default function POSPage() {
             )}
           </div>
         )}
+      </div>
+      {receipt && (
+        <ReceiptModal data={receipt} onClose={() => setReceipt(null)} />
+      )}
+    </div>
+  );
+}
+
+function ReceiptModal({ data, onClose }: { data: { invoiceId?: string; invoiceNumber?: string; url?: string } | null; onClose: () => void }) {
+  if (!data) return null;
+  const qrSrc = data.url ? `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(data.url)}` : '';
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
+      <div className="w-full max-w-sm rounded-xl bg-card p-5 shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <h3 className="text-base font-semibold text-card-foreground mb-1">Payment Successful</h3>
+        {data.invoiceNumber && (
+          <p className="text-xs text-muted-foreground mb-3">Invoice #{data.invoiceNumber}</p>
+        )}
+        {data.url && (
+          <div className="flex flex-col items-center gap-2 mb-3">
+            {/* External QR generator used for convenience; replace with local generator if desired */}
+            <img src={qrSrc} alt="Invoice QR" className="h-40 w-40" />
+            <a
+              href={data.url}
+              target="_blank"
+              rel="noreferrer"
+              className="text-xs text-accent hover:underline"
+            >
+              Open print slip
+            </a>
+          </div>
+        )}
+        <div className="flex gap-2 pt-1">
+          <button onClick={onClose} className="flex-1 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent-dark transition-colors">Done</button>
+        </div>
       </div>
     </div>
   );
