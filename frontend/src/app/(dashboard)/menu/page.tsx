@@ -24,7 +24,7 @@ export default function MenuPage() {
       const res = await menuApi.getCategories();
       return res.data?.data || res.data;
     },
-    placeholderData: [
+    initialData: [
       { id: '1', name: 'Appetizers', name_ar: 'مقبلات', is_active: true, sort_order: 1 },
       { id: '2', name: 'Main Course', name_ar: 'الأطباق الرئيسية', is_active: true, sort_order: 2 },
       { id: '3', name: 'Beverages', name_ar: 'المشروبات', is_active: true, sort_order: 3 },
@@ -38,7 +38,7 @@ export default function MenuPage() {
       const res = await menuApi.getItems();
       return res.data?.data || res.data;
     },
-    placeholderData: [
+    initialData: [
       { id: 'a1', category_id: '1', name: 'Hummus', name_ar: 'حمص', price: 25, cost_price: 8, is_available: true, is_active: true, modifiers: null },
       { id: 'a2', category_id: '1', name: 'Fattoush Salad', name_ar: 'سلطة فتوش', price: 30, cost_price: 10, is_available: true, is_active: true, modifiers: null },
       { id: 'a3', category_id: '1', name: 'Grilled Halloumi', name_ar: 'حلومي مشوي', price: 35, cost_price: 14, is_available: true, is_active: true, modifiers: null },

@@ -21,7 +21,7 @@ export default function InventoryPage() {
       const res = await inventoryApi.getAll();
       return res.data?.data || res.data;
     },
-    placeholderData: [
+    initialData: [
       { id: '1', name: 'Chicken Breast', sku: 'INV-001', unit: 'kg', stock_level: 45, low_stock_threshold: 20, unit_cost: 28, category: 'Meat', is_active: true },
       { id: '2', name: 'Lamb Leg', sku: 'INV-002', unit: 'kg', stock_level: 12, low_stock_threshold: 15, unit_cost: 55, category: 'Meat', is_active: true },
       { id: '3', name: 'Basmati Rice', sku: 'INV-003', unit: 'kg', stock_level: 80, low_stock_threshold: 25, unit_cost: 8, category: 'Grains', is_active: true },
